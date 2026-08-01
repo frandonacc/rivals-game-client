@@ -10,7 +10,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-size: 20
+          node-version: 20
 
       - name: Install Dependencies
         run: |
@@ -18,11 +18,11 @@ jobs:
           mkdir -p www
           cp index.html www/index.html || true
 
-            - name: Set up JDK 21
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '21'  # <-- FORCES CLOUD RUNNER TO USE JAVA 21
+          java-version: '21'
 
       - name: Build Android App with Capacitor
         run: |
@@ -39,3 +39,4 @@ jobs:
         with:
           name: Rivals-Showdown-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
+
