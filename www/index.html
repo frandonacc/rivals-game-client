@@ -276,3 +276,4 @@ function gameTick() {
         if (pId === 1) {
             camera.lookAt(p1Mesh.position.x + 20, 0, p1Mesh.position.z);
         } else {
+camera.lookAt(p2Mesh.position.x - 20, 0, p2Mesh.position.z);}} else {// Slow rotation animation during searching statescamera.position.x = 80 * Math.sin(Date.now() * 0.0005);camera.position.z = 80 * Math.cos(Date.now() * 0.0005);camera.position.y = 45;camera.lookAt(0, 0, 0);}renderer.render(scene, camera);}// Handle real-time device screen adjustmentswindow.addEventListener('resize', () => {camera.aspect = window.innerWidth / window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth, window.innerHeight);});gameTick();
