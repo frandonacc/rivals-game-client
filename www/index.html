@@ -30,7 +30,6 @@
             width: 100vw; 
             height: 100vh; 
         }
-        /* Telemetry Dashboard Layer overlayed cleanly on top of WebGL */
         .hud-overlay {
             position: absolute;
             top: 20px;
@@ -39,6 +38,7 @@
             justify-content: space-between;
             padding: 0 40px;
             pointer-events: none;
+            z-index: 10;
         }
         .hud-card {
             background: rgba(26, 31, 38, 0.85);
@@ -62,8 +62,9 @@
             background: rgba(20, 24, 30, 0.9);
             padding: 20px 40px;
             border-radius: 12px;
-            border: 2px solid #ff3232;
+            border: 2px solid #323c4b;
             pointer-events: none;
+            z-index: 10;
         }
         .mobile-controls { 
             display: none; 
@@ -73,6 +74,7 @@
             position: absolute; 
             bottom: 6vh; 
             pointer-events: none;
+            z-index: 10;
         }
         .d-pad, .action-pad { pointer-events: auto; }
         .btn { 
@@ -118,8 +120,7 @@
 
 <script>
 // --- CLOUD SERVER INSTANCE CONNECTION ---
-// Paste your exact Render URL here (Keep the quotes!)
-const SERVER_URL = "https://onrender.com"; 
+const SERVER_URL = "https://rivalsgame.onrender.com"; 
 const socket = io(SERVER_URL, { transports: ['websocket'], reconnection: true });
 
 // --- THREE.JS INITIALIZATION MATRIX ---
@@ -276,4 +277,5 @@ function gameTick() {
         if (pId === 1) {
             camera.lookAt(p1Mesh.position.x + 20, 0, p1Mesh.position.z);
         } else {
-camera.lookAt(p2Mesh.position.x - 20, 0, p2Mesh.position.z);}} else {// Slow rotation animation during searching statescamera.position.x = 80 * Math.sin(Date.now() * 0.0005);camera.position.z = 80 * Math.cos(Date.now() * 0.0005);camera.position.y = 45;camera.lookAt(0, 0, 0);}renderer.render(scene, camera);}// Handle real-time device screen adjustmentswindow.addEventListener('resize', () => {camera.aspect = window.innerWidth / window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth, window.innerHeight);});gameTick();
+            camera.lookAt(p2Mesh.position.x - 20, 0, p2Mesh.position.z);
+}} else {// Slow rotation animation during searching statescamera.position.x = 80 * Math.sin(Date.now() * 0.0005);camera.position.z = 80 * Math.cos(Date.now() * 0.0005);camera.position.y = 45;camera.lookAt(0, 0, 0);}renderer.render(scene, camera);}// Handle real-time device screen adjustmentswindow.addEventListener('resize', () => {camera.aspect = window.innerWidth / window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth, window.innerHeight);});gameTick();
