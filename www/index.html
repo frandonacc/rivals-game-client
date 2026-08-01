@@ -5,8 +5,8 @@
     <title>Rivals 3D Arena Showdown</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
-    <!-- Load Socket.io and High Performance Three.js 3D Engine from CDN -->
-    <script src="https://socket.io"></script>
+    <!-- Verified High-Performance CDNs for Socket.io and Core Three.js Engine Matrix -->
+    <script src="https://jsdelivr.net"></script>
     <script src="https://cloudflare.com"></script>
     
     <style>
@@ -120,7 +120,7 @@
 
 <script>
 // --- CLOUD SERVER INSTANCE CONNECTION ---
-const SERVER_URL = "https://rivalsgame.onrender.com"; 
+const SERVER_URL = "https://onrender.com"; 
 const socket = io(SERVER_URL, { transports: ['websocket'], reconnection: true });
 
 // --- THREE.JS INITIALIZATION MATRIX ---
@@ -161,19 +161,14 @@ const p2Mesh = new THREE.Mesh(cubeGeo, new THREE.MeshStandardMaterial({ color: 0
 scene.add(p1Mesh);
 scene.add(p2Mesh);
 
-// Hide meshes initially during matching phases
 p1Mesh.visible = false;
 p2Mesh.visible = false;
 
-// Bullet object pooling buffers
 let activeBullets = [];
-
-// --- LOGICAL HUD TELEMETRY STATE PIPELINES ---
 let gameState = "SEARCHING";
 let pId = null;
 let keys = {};
 
-// Convert screen space layout models
 const scaleX = (val) => (val - 400) * 0.2;
 const scaleY = (val) => (val - 300) * -0.2;
 
@@ -185,7 +180,6 @@ socket.on("initPlayer", (assignedId) => {
     p1Mesh.visible = true;
     p2Mesh.visible = true;
     
-    // Lock camera angle dynamically behind player assignment profile maps
     if (pId === 1) {
         camera.position.set(-70, 35, 0);
     } else {
@@ -196,18 +190,15 @@ socket.on("initPlayer", (assignedId) => {
 socket.on("sceneUpdate", (data) => {
     if (gameState !== "PLAYING") return;
 
-    // Map X & Y coordinates directly to 3D Transform Translation Vectors
     p1Mesh.position.set(scaleX(100), 3, scaleY(data.p1.y));
     p2Mesh.position.set(scaleX(660), 3, scaleY(data.p2.y));
 
     document.getElementById("p1-hp-card").innerText = `BLUE: ${data.p1.hp} HP`;
     document.getElementById("p2-hp-card").innerText = `RED: ${data.p2.hp} HP`;
 
-    // Clear previous bullet meshes out of memory pool cleanly
     activeBullets.forEach(b => scene.remove(b));
     activeBullets = [];
 
-    // Instantiate P1 white bullet spheres into the 3D grid layout
     data.p1B.forEach(b => {
         const sphere = new THREE.Mesh(new THREE.SphereGeometry(1.2, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
         sphere.position.set(scaleX(b.x), 3, scaleY(b.y));
@@ -215,7 +206,6 @@ socket.on("sceneUpdate", (data) => {
         activeBullets.push(sphere);
     });
 
-    // Instantiate P2 yellow bullet spheres into the 3D grid layout
     data.p2B.forEach(b => {
         const sphere = new THREE.Mesh(new THREE.SphereGeometry(1.2, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffff64 }));
         sphere.position.set(scaleX(b.x), 3, scaleY(b.y));
@@ -273,9 +263,29 @@ function gameTick() {
             setTimeout(() => keys["shoot_cooldown"] = false, 250);
         }
 
-        // Dynamically track camera look targets onto your assigned player model mesh
         if (pId === 1) {
             camera.lookAt(p1Mesh.position.x + 20, 0, p1Mesh.position.z);
         } else {
             camera.lookAt(p2Mesh.position.x - 20, 0, p2Mesh.position.z);
-}} else {// Slow rotation animation during searching statescamera.position.x = 80 * Math.sin(Date.now() * 0.0005);camera.position.z = 80 * Math.cos(Date.now() * 0.0005);camera.position.y = 45;camera.lookAt(0, 0, 0);}renderer.render(scene, camera);}// Handle real-time device screen adjustmentswindow.addEventListener('resize', () => {camera.aspect = window.innerWidth / window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth, window.innerHeight);});gameTick();
+        }
+    } else {
+        camera.position.x = 80 * Math.sin(Date.now() * 0.0005);
+        camera.position.z = 80 * Math.cos(Date.now() * 0.0005);
+        camera.position.y = 45;
+        camera.lookAt(0, 0, 0);
+    }
+
+    renderer.render(scene, camera);
+}
+
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+gameTick();
+</script>
+</body>
+</html>
+
