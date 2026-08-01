@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rivals Mobile Showdown</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- Load Socket.io Client Library from CDN -->
+    <script src="https://socket.io"></script>
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+        body { margin: 0; padding: 0; background: #14181e; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+        canvas { background: #1a1f26; border: 2px solid #323c4b; box-shadow: 0 10px 30px rgba(0,0,0,0.5); max-width: 100%; max-height: 75vh; aspect-ratio: 4/3; }
+        .mobile-controls { display: none; width: 100%; max-width: 800px; justify-content: space-between; padding: 20px 40px; position: absolute; bottom: 5vh; }
+        .d-pad { display: flex; flex-direction: column; gap: 10px; }
+        .btn { width: 75px; height: 75px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.4); border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; active-background: rgba(255,255,255,0.2); }
+        .btn:active { background: rgba(255,255,255,0.25); border-color: #fff; }
+        #btnShoot { width: 90px; height: 90px; background: rgba(255, 50, 50, 0.2); border-color: rgba(255, 50, 50, 0.6); font-size: 18px; }
+        #btnShoot:active { background: rgba(255, 50, 50, 0.5); }
+        @media (max-width: 1024px) { .mobile-controls { display: flex; } }
+    </style>
+</head>
+<body>
+
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+
+<div class="mobile-controls">
+    <div class="d-pad">
+        <div class="btn" id="btnUp">▲ UP</div>
+        <div class="btn" id="btnDown">▼ DOWN</div>
+    </div>
+    <div class="btn" id="btnShoot">FIRE</div>
+</div>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+// --- CLOUD SERVER CONNECTION ---
+// Replace with your live VPS Cloud IP or Domain name when deploying to AWS/Heroku
+const SERVER_URL = "https://rivalsgame.onrender.com"; 
+const socket = io(SERVER_URL);
+
+// --- LOCAL GAME ENGINE STATE ---
+let gameState = "SEARCHING"; 
+let pId = null;
+let player1 = { x: 100, y: 280, hp: 100, color: '#00c8ff' };
+let player2 = { x: 660, y: 280, hp: 100, color: '#ff3232' };
+let p1Bullets = [];
+let p2Bullets = [];
+let matchOverMessage = "";
+
+let keys = {};
+
+// --- MULTIPLAYER NETWORK LISTENERS ---
+socket.on("connect", () => { console.log("[*] Connected to matchmaking network."); });
+
+socket.on("initPlayer", (assignedId) => {
+    pId = assignedId;
+    gameState = "PLAYING";
+    console.log("[+] Assigned as Player " + pId);
+});
+
+socket.on("sceneUpdate", (data) => {
+    if (gameState !== "PLAYING") return;
+    player1.y = data.p1.y; player1.hp = data.p1.hp;
+    player2.y = data.p2.y; player2.hp = data.p2.hp;
+    p1Bullets = data.p1B;
+    p2Bullets = data.p2B;
+});
+
+socket.on("gameOver", (winnerId) => {
+    gameState = "GAME_OVER";
+    matchOverMessage = winnerId === pId ? "VICTORY! RIVAL ELIMINATED" : "DEFEAT! YOU WERE ELIMINATED";
+});
+
+socket.on("opponentDisconnected", () => {
+    gameState = "MATCH_ABORTED";
+});
+
+// --- HARDWARE INPUT CONTROL MAPPINGS ---
+window.addEventListener("keydown", e => { keys[e.code] = true; });
+window.addEventListener("keyup", e => { keys[e.code] = false; });
+
+// Touch event triggers for mobile overlays
+const bindTouch = (id, keyCode) => {
+    const el = document.getElementById(id);
+    el.addEventListener("touchstart", (e) => { e.preventDefault(); keys[keyCode] = true; });
+    el.addEventListener("touchend", (e) => { e.preventDefault(); keys[keyCode] = false; });
+};
+bindTouch("btnUp", "ArrowUp");
+bindTouch("btnDown", "ArrowDown");
+document.getElementById("btnShoot").addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    if (gameState === "PLAYING") socket.emit("shootAction");
+});
+
+// --- ENGINE LOGIC LOOPS ---
+function updateClientLoop() {
+    if (gameState === "PLAYING") {
+        let inputDirection = 0;
+        if (keys["KeyW"] || keys["ArrowUp"]) inputDirection = -5;
+        if (keys["KeyS"] || keys["ArrowDown"]) inputDirection = 5;
+        if (inputDirection !== 0) socket.emit("moveAction", inputDirection);
+
+        if (keys["Space"] && !keys["shoot_cooldown"]) {
+            socket.emit("shootAction");
+            keys["shoot_cooldown"] = true;
+            setTimeout(() => keys["shoot_cooldown"] = false, 250); // Weapon cycle rate limit
+        }
+    }
+    renderScene();
+    requestAnimationFrame(updateClientLoop);
+}
+
+function renderScene() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (gameState === "PLAYING") {
+        // Draw Arena Grid Boundary Line
+        ctx.strokeStyle = "rgba(255,255,255,0.1)";
+        ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(canvas.width/2, 0); ctx.lineTo(canvas.width/2, canvas.height); ctx.stroke();
+
+        // Draw Player Ship Hitboxes
+        ctx.fillStyle = player1.color; ctx.fillRect(player1.x, player1.y, 40, 40);
+        ctx.fillStyle = player2.color; ctx.fillRect(player2.x, player2.y, 40, 40);
+
+        // Render Active Projectile Arrays
+        ctx.fillStyle = "#fff"; p1Bullets.forEach(b => ctx.fillRect(b.x, b.y, 8, 8));
+        ctx.fillStyle = "#ffff64"; p2Bullets.forEach(b => ctx.fillRect(b.x, b.y, 8, 8));
+
+        // Render Telemetry Dashboard Overlay
+        ctx.font = "bold 20px sans-serif";
+        ctx.fillStyle = player1.color; ctx.fillText("BLUE HP: " + player1.hp, 30, 40);
+        ctx.fillStyle = player2.color; ctx.fillText("RED HP: " + player2.hp, canvas.width - 160, 40);
+    } 
+    else if (gameState === "SEARCHING") {
+        drawCenteredText("MATCHMAKING: SEARCHING FOR RIVALS...", "rgba(255,255,255,0.7)", 24);
+    } 
+    else if (gameState === "GAME_OVER") {
+        drawCenteredText(matchOverMessage, "#fff", 32);
+    } 
+    else if (gameState === "MATCH_ABORTED") {
+        drawCenteredText("OPPONENT DISCONNECTED FROM ARENA", "#ff3232", 24);
+    }
+}
+
+function drawCenteredText(text, color, fontSize) {
+    ctx.fillStyle = color;
+    ctx.font = "bold " + fontSize + "px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+    ctx.textAlign = "start"; // Reset default standard alignment mapping
+}
+
+updateClientLoop();
+</script>
+</body>
+</html>
